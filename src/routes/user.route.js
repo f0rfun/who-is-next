@@ -11,7 +11,9 @@ router.post("/signup", async (req, res, next) => {
   try {
     const user = new User(req.body);
     const newUser = await user.save();
-    res.send(newUser);
+
+    const { _id, __v, password, ...sanitisedUser } = newUser.toObject();
+    res.json(sanitisedUser);
   } catch (err) {
     next(err);
   }
@@ -41,7 +43,8 @@ router.post("/login", async (req, res, next) => {
     res.cookie("token", token, {
       expires: expiryDate,
       httpOnly: true, // client-side js cannot access cookie info
-      secure: false // use HTTPS
+      secure: false, // use HTTPS
+      signed: true
     });
 
     res.send("You are now logged in!");
@@ -58,7 +61,7 @@ const protectRoute = (req, res, next) => {
     if (!req.cookies.token) {
       throw new Error("You are not authorized");
     }
-    req.user = jwt.verify(req.cookies.token, process.env.JWT_SECRET_KEY);
+    req.user = jwt.verify(req.signedCookies.token, process.env.JWT_SECRET_KEY);
 
     next();
   } catch (err) {
@@ -72,18 +75,19 @@ router.get("/:username", protectRoute, async (req, res, next) => {
     const username = req.params.username;
     const user = await User.findOne({ username });
 
-    if (req.user.name !== username) {
-      const unauthorizedUser = new Error("Unauthorized");
-      unauthorizedUser.statusCode = 403;
-      throw unauthorizedUser;
+    if (req.user.username !== username) {
+      const forbiddenUser = new Error("Forbidden");
+      forbiddenUser.statusCode = 403;
+      throw forbiddenUser;
     }
     if (!user) {
       const noUserErr = new Error("No such user");
       noUserErr.statusCode = 404;
       throw noUserErr;
     }
-    console.log(user);
-    res.json(user);
+
+    const { _id, __v, password, ...sanitisedUser } = user.toObject();
+    res.json(sanitisedUser);
   } catch (err) {
     next(err);
   }

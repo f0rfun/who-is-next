@@ -3,6 +3,11 @@ const app = express();
 const gtechiesRoute = require("./src/routes/gtechies.route");
 const userRoute = require("./src/routes/user.route");
 const cookieParser = require("cookie-parser");
+const cors = require("cors");
+
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || "http://localhost:3000"
+};
 
 require("./utils/db");
 const GovTechies = require("./src/govtechies.model");
@@ -18,7 +23,8 @@ const apiMenu = {
   "7": "POST   /jumplings/presenters",
   "8": "GET    /jumplings/presenters"
 };
-app.use(cookieParser());
+app.use(cookieParser("secretsecret"));
+app.use(cors(corsOptions));
 
 app.get("/", (req, res, next) => {
   res.status(200);
