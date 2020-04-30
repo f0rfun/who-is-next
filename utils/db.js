@@ -10,9 +10,7 @@ const mongoOptions = {
 
 // will create a new db if does not exist
 const dbName = "govtechies";
-const dbUrl =
-  process.env.MONGODB_URI ||
-  `mongodb+srv://admin:verystrongpassword@cluster0-lhxw1.mongodb.net/${dbName}?retryWrites=true&w=majority`;
+const dbUrl = process.env.MONGODB_URI || "mongodb://localhost:27017/" + dbName;
 mongoose.connect(dbUrl, mongoOptions);
 const db = mongoose.connection;
 

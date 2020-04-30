@@ -39,13 +39,23 @@ router.post("/login", async (req, res, next) => {
     const oneWeek = oneDay * 7;
     const expiryDate = new Date(Date.now() + oneWeek);
 
-    // Can expiry date on cookie be changed? How about JWT token?
-    res.cookie("token", token, {
-      expires: expiryDate,
-      httpOnly: true, // client-side js cannot access cookie info
-      secure: false, // use HTTPS
-      signed: true
-    });
+    if (
+      process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "test"
+    ) {
+      res.cookie("token", token, {
+        expires: expiryDate,
+        httpOnly: true,
+        signed: true
+      });
+    } else {
+      res.cookie("token", token, {
+        expires: expiryDate,
+        httpOnly: true, // client side js cannot access cookie info
+        secure: true, // use HTTPS
+        signed: true // signed cookie
+      });
+    }
 
     res.send("You are now logged in!");
   } catch (err) {
@@ -58,9 +68,10 @@ router.post("/login", async (req, res, next) => {
 
 const protectRoute = (req, res, next) => {
   try {
-    if (!req.cookies.token) {
+    if (!req.signedCookies.token) {
       throw new Error("You are not authorized");
     }
+
     req.user = jwt.verify(req.signedCookies.token, process.env.JWT_SECRET_KEY);
 
     next();

@@ -30,11 +30,11 @@ describe("User route", () => {
 
   describe("POST /user/login", () => {
     it("should log user in if password is correct", async () => {
-      //   signedInAgent = request.agent(app);
-      const { text } = await request(app)
+      signedInAgent = request.agent(app);
+      const { text } = await signedInAgent
         .post(`/user/login`)
         .send(mockTesters[1])
-        // .expect("set-cookie", /token=.*; Path=\/; Expires=.* HttpOnly/)
+        .expect("set-cookie", /token=.*; Path=\/; Expires=.* HttpOnly/)
         .expect(200);
 
       expect(text).toEqual("You are now logged in!");
@@ -74,10 +74,11 @@ describe("User route", () => {
     it("should return only authorised user", async () => {
       jwt.verify.mockReturnValueOnce({ username: mockTesters[0].username });
 
-      const { body: user } = await request(app)
+      const { body: user } = await signedInAgent
         .get(`/user/${mockTesters[0].username}`)
-        .set("Cookie", "token=valid-token")
         .expect(200);
+
+      // .set("Cookie", "token=valid-token")
 
       expect(jwt.verify).toHaveBeenCalledTimes(1);
 
@@ -87,9 +88,8 @@ describe("User route", () => {
     it("should respond with incorrect user message", async () => {
       jwt.verify.mockReturnValueOnce({ username: mockTesters[0].username });
 
-      const { text } = await request(app)
+      const { text } = await signedInAgent
         .get(`/user/${mockTesters[1].username}`)
-        .set("Cookie", "token=valid-token")
         .expect(403);
 
       expect(text).toEqual("Forbidden");
@@ -106,10 +106,7 @@ describe("User route", () => {
       jwt.verify.mockImplementationOnce(() => {
         throw new Error();
       });
-      await request(app)
-        .get(`/user/${mockTesters[0].username}`)
-        .set("Cookie", "token=invalid-token")
-        .expect(401);
+      await signedInAgent.get(`/user/${mockTesters[0].username}`).expect(401);
 
       expect(jwt.verify).toHaveBeenCalledTimes(1);
     });
